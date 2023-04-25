@@ -22,6 +22,15 @@ resource "aws_launch_template" "main" {
     )
   }
 
+  tag_specifications {
+    resource_type = "spot-instances-request"
+
+    tags = merge(
+      var.tags,
+      { Name = "${var.component}-${var.env}", Monitor = "yes" }
+    )
+  }
+
   user_data = base64encode(templatefile("${path.module}/userdata.sh", {
     component = var.component
     env       = var.env
@@ -55,7 +64,7 @@ resource "aws_autoscaling_policy" "asg-cpu-rule" {
     predefined_metric_specification {
       predefined_metric_type = "ASGAverageCPUUtilization"
     }
-    target_value = 40.0
+    target_value = 20.0
   }
 }
 
@@ -116,6 +125,7 @@ resource "aws_lb_target_group" "main" {
     timeout             = 4
     path                = "/health"
   }
+  deregistration_delay = 30
   tags = merge(
     var.tags,
     { Name = "${var.component}-${var.env}" }
@@ -145,3 +155,4 @@ resource "aws_lb_listener_rule" "listener_rule" {
     }
   }
 }
+
